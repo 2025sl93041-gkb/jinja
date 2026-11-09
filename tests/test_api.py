@@ -351,18 +351,42 @@ class TestUndefined:
     def test_debug_undefined(self):
         env = Environment(undefined=DebugUndefined)
         assert env.from_string("{{ missing }}").render() == "{{ missing }}"
-        pytest.raises(UndefinedError, env.from_string("{{ missing.attribute }}").render)
+        assert (
+            env.from_string("{{ missing.attribute }}").render()
+            == "{{ missing.attribute }}"
+        )
         assert env.from_string("{{ missing|list }}").render() == "[]"
         assert env.from_string("{{ missing is not defined }}").render() == "True"
         assert (
             env.from_string("{{ foo.missing }}").render(foo=42)
-            == "{{ no such element: int object['missing'] }}"
+            == "{{ no such element: int object.missing }}"
         )
         assert env.from_string("{{ not missing }}").render() == "True"
         undefined_hint = "this is testing undefined hint of DebugUndefined"
         assert (
             str(DebugUndefined(hint=undefined_hint))
             == f"{{{{ undefined value printed: {undefined_hint} }}}}"
+        )
+
+    def test_debug_undefined_attribute_access(self):
+        env = Environment(undefined=DebugUndefined)
+        # parent undefined: dotted access chains the name instead of raising
+        assert (
+            env.from_string("{{ env.val }}").render() == "{{ env.val }}"
+        )
+        # parent undefined: deeper chain
+        assert (
+            env.from_string("{{ env.a.b }}").render() == "{{ env.a.b }}"
+        )
+        # parent defined, attribute missing: dot notation (not bracket)
+        assert (
+            env.from_string("{{ env.val }}").render(env={})
+            == "{{ no such element: dict object.val }}"
+        )
+        # integer key: still uses bracket notation
+        assert (
+            env.from_string("{{ env[0] }}").render(env={})
+            == "{{ no such element: dict object[0] }}"
         )
 
     def test_strict_undefined(self):

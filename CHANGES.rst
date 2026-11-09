@@ -5,6 +5,12 @@ Version 3.2.0
 
 Unreleased
 
+-   :class:`DebugUndefined` now renders ``{{ var.attr }}`` instead of
+    crashing when ``var`` is undefined. Attribute access on an undefined
+    value chains the name (``{{ var.attr }}``) rather than raising
+    :exc:`UndefinedError`. String attribute names use dot notation
+    (``{{ no such element: type.attr }}``) instead of bracket notation.
+    :issue:`1871`
 -   Drop support for Python 3.7, 3.8, and 3.9.
 -   Update minimum MarkupSafe version to >= 3.0.
 -   Update minimum Babel version to >= 2.17.

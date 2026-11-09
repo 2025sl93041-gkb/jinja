@@ -1010,6 +1010,8 @@ class DebugUndefined(Undefined):
     >>> foo = DebugUndefined(name='foo')
     >>> str(foo)
     '{{ foo }}'
+    >>> str(foo.bar)
+    '{{ foo.bar }}'
     >>> not foo
     True
     >>> foo + 42
@@ -1028,12 +1030,27 @@ class DebugUndefined(Undefined):
             message = self._undefined_name  # type: ignore
 
         else:
-            message = (
-                f"no such element: {object_type_repr(self._undefined_obj)}"
-                f"[{self._undefined_name!r}]"
-            )
+            if isinstance(self._undefined_name, str):
+                message = (
+                    f"no such element: {object_type_repr(self._undefined_obj)}"
+                    f".{self._undefined_name}"
+                )
+            else:
+                message = (
+                    f"no such element: {object_type_repr(self._undefined_obj)}"
+                    f"[{self._undefined_name!r}]"
+                )
 
         return f"{{{{ {message} }}}}"
+
+    def __getattr__(self, name: str) -> "DebugUndefined":
+        if name[:2] == "__" and name[-2:] == "__":
+            raise AttributeError(name)
+
+        if self._undefined_obj is missing:
+            return type(self)(name=f"{self._undefined_name}.{name}")
+
+        return self._fail_with_undefined_error()
 
 
 class StrictUndefined(Undefined):
